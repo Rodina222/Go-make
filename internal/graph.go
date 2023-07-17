@@ -11,7 +11,16 @@ import (
 var (
 
 	// ErrTargetNotFound is returned when there is no input target or the input target doesn't exist
-	ErrTargetNotFound = errors.New("target is not found to be executed")
+	ErrTargetNotFound = errors.New("target is not found")
+
+	// ErrInvalidFormat is returned when the format of the input makefile is invalid
+	ErrInvalidFormat = errors.New("format is invalid")
+
+	// ErrNoCommandsFound is returned when there is a target that has no commands to be executed
+	ErrNoCommandsFound = errors.New("no commands to be executed for this target")
+
+	// ErrCyclicDependency is returned once a cyclic dependency is detected in the graph
+	ErrCyclicDependency = errors.New("cyclic dependency is detected")
 )
 
 // Vertex represents a target in a graph of vertices/targets that has dependencies and commands
@@ -70,7 +79,7 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 	content, err := os.Open(filepath)
 
 	if err != nil {
-		return errors.New("failed to open the file")
+		return err
 	}
 
 	defer content.Close()
@@ -78,20 +87,24 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 	// create a scanner to read the file line by line
 	scanner := bufio.NewScanner(content)
 
+	if err := scanner.Err(); err != nil {
+		return errors.New("scanner failed to scan the file")
+	}
+
 	// create a vertex in the graph
 	vertex := NewVertex()
 
 	// scanning the file line by line
 	for scanner.Scan() {
 
-		line := strings.TrimSpace(scanner.Text())
+		line := scanner.Text()
 
 		// skipping empty lines and comments
-		if len(line) == 0 || strings.HasPrefix(line, "#") {
+		if strings.TrimSpace(line) == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 
-		if strings.Contains(line, ":") && line[0] != ' ' {
+		if strings.Contains(line, ":") {
 
 			// create a new vertex in the graph
 			vertex = NewVertex()
@@ -103,8 +116,11 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 			target = strings.TrimSpace(line[:colonIndex])
 
 			if target == "" {
-				return ErrTargetNotFound
+				return ErrInvalidFormat
 			}
+
+			// add the vertex to the graph
+			graph.vertices[target] = vertex
 
 			// add dependencies (if found)
 			if len(line) > colonIndex+1 {
@@ -114,21 +130,39 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 
 			}
 			continue
+
 		}
 
-		vertex.AddCommand(line)
+		if strings.HasPrefix(line, "\t") && target != "" {
 
-		// add the vertex to the graph
-		graph.vertices[target] = vertex
+			cmd := strings.TrimPrefix(line, "\t")
+			vertex.AddCommand(cmd)
+			graph.vertices[target] = vertex
 
+			continue
+
+		}
+		return ErrInvalidFormat
+	}
+	return nil
+}
+
+func (graph *Graph) CheckCmds() error {
+
+	for target, vertex := range graph.vertices {
+
+		if len(vertex.cmds) == 0 {
+
+			return fmt.Errorf("%w : %s", ErrNoCommandsFound, target)
+
+		}
 	}
 
 	return nil
-
 }
 
-// CheckCyclicDependency checks if a cyclic dependency exists or not and exits once it found one
-func (graph *Graph) CheckCyclicDependency() {
+// CheckCyclicDependency checks if a cyclic dependency exists or not and returns error once it is found
+func (graph *Graph) CheckCyclicDependency() error {
 
 	for target, vertex := range graph.vertices {
 
@@ -142,8 +176,7 @@ func (graph *Graph) CheckCyclicDependency() {
 
 				if dep == target {
 
-					fmt.Fprintf(os.Stderr, "cyclic dependency is detected %s\n", target)
-					os.Exit(-1)
+					return ErrCyclicDependency
 				}
 
 			}
@@ -151,23 +184,11 @@ func (graph *Graph) CheckCyclicDependency() {
 		}
 
 	}
-
+	return nil
 }
 
-// CheckTarget checks that the input target in the command line exists in the graph representing the makefile
-func (graph *Graph) CheckTarget(t string) error {
-
-	for target := range graph.vertices {
-
-		if t == target {
-			return nil
-		}
-	}
-	return ErrTargetNotFound
-}
-
-// OrderOfExecution it ensures that the commands of the dependencies are executed first before the commands of the input target
-func (graph *Graph) OrderOfExecution(t string) {
+// OrderOfExecution ensures that the commands of the dependencies are executed first before the commands of the input target
+func (graph *Graph) OrderOfExecution(t string) []string {
 
 	target := graph.vertices[t]
 	dependencies := target.dependencies
@@ -184,11 +205,15 @@ func (graph *Graph) OrderOfExecution(t string) {
 		}
 	}
 
+	exexutionOrder := make([]string, 0, len(target.cmds))
 	// execute the commands of the target
 	for _, cmd := range target.cmds {
 
+		exexutionOrder = append(exexutionOrder, cmd)
 		ExecCommand(cmd)
 
 	}
+
+	return exexutionOrder
 
 }
