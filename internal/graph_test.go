@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
 const validMakefile = `build:
 	@echo 'executing build'
 	echo 'cmd2'
