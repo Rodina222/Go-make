@@ -9,6 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const validMakefile = `build:
+	@echo 'executing build'
+	echo 'cmd2'
+
+	test: build
+	@echo 'executing test'
+
+	publish: test 
+	@echo 'executing publish'`
+
 func TestParseMakeFile(t *testing.T) {
 
 	graph := NewGraph()
@@ -34,17 +44,18 @@ func TestParseMakeFile(t *testing.T) {
 
 	t.Run("valid makefile", func(t *testing.T) {
 
-		dir := t.TempDir()
-
+		dir := os.TempDir()
 		filePath := filepath.Join(dir, "Makefile")
 
-		err := os.WriteFile(filePath, make([]byte, 0), 0644)
-
+		file, err := os.Create(filePath)
 		assert.NoError(t, err)
 
-		filename := filepath.Base(filePath)
+		defer os.Remove(file.Name())
 
-		err = graph.ParseMakeFile(filename)
+		_, err = file.WriteString(validMakefile)
+		assert.NoError(t, err)
+
+		err = graph.ParseMakeFile(file.Name())
 		assert.NoError(t, err)
 
 		if !reflect.DeepEqual(graph, expectedGraph) {
@@ -55,19 +66,32 @@ func TestParseMakeFile(t *testing.T) {
 
 	t.Run("invalid makefile", func(t *testing.T) {
 
-		dir := t.TempDir()
+		invalidMakefile := `build:
+	@echo 'executing build'
+	echo 'cmd2'
 
-		filePath := filepath.Join(dir, "Makefile2")
+	  : build
+	@echo 'executing test'
 
-		err := os.WriteFile(filePath, make([]byte, 0), 0644)
+	publish: test 
+	@echo 'executing publish'`
 
+		dir := os.TempDir()
+		filePath := filepath.Join(dir, "Makefile")
+
+		file, err := os.Create(filePath)
 		assert.NoError(t, err)
 
-		filename := filepath.Base(filePath)
+		defer os.Remove(file.Name())
 
-		err = graph.ParseMakeFile(filename)
+		_, err = file.WriteString(invalidMakefile)
+		assert.NoError(t, err)
+
+		err = graph.ParseMakeFile(file.Name())
+		assert.Error(t, err)
 
 		assert.Equal(t, ErrInvalidFormat, err, "want error %q but got %q", ErrInvalidFormat, err)
+
 	})
 
 }
@@ -79,16 +103,18 @@ func TestCheckCmds(t *testing.T) {
 
 	t.Run("all targets have commands", func(t *testing.T) {
 
-		dir := t.TempDir()
-
+		dir := os.TempDir()
 		filePath := filepath.Join(dir, "Makefile")
 
-		err := os.WriteFile(filePath, make([]byte, 0), 0644)
+		file, err := os.Create(filePath)
 		assert.NoError(t, err)
 
-		filename := filepath.Base(filePath)
+		defer os.Remove(file.Name())
 
-		err = graph.ParseMakeFile(filename)
+		_, err = file.WriteString(validMakefile)
+		assert.NoError(t, err)
+
+		err = graph.ParseMakeFile(file.Name())
 		assert.NoError(t, err)
 
 		err = graph.CheckCmds()
@@ -97,20 +123,32 @@ func TestCheckCmds(t *testing.T) {
 
 	t.Run("a target or more have no commands", func(t *testing.T) {
 
-		dir := t.TempDir()
+		invalidMakefile := `build:
+		@echo 'executing build'
+		echo 'cmd2'
+	
+		test: build
+	
+		publish: test 
+		@echo 'executing publish'`
 
-		filePath := filepath.Join(dir, "Makefile3")
+		dir := os.TempDir()
+		filePath := filepath.Join(dir, "Makefile")
 
-		err := os.WriteFile(filePath, make([]byte, 0), 0644)
+		file, err := os.Create(filePath)
 		assert.NoError(t, err)
 
-		filename := filepath.Base(filePath)
+		defer os.Remove(file.Name())
 
-		err = graph.ParseMakeFile(filename)
+		_, err = file.WriteString(invalidMakefile)
+		assert.NoError(t, err)
+
+		err = graph.ParseMakeFile(file.Name())
 		assert.NoError(t, err)
 
 		err = graph.CheckCmds()
 		assert.Error(t, err)
+
 	})
 
 }
@@ -122,38 +160,54 @@ func TestCyclicDependency(t *testing.T) {
 
 	t.Run("no cyclic dependency exists", func(t *testing.T) {
 
-		dir := t.TempDir()
-
+		dir := os.TempDir()
 		filePath := filepath.Join(dir, "Makefile")
 
-		err := os.WriteFile(filePath, make([]byte, 0), 0644)
+		file, err := os.Create(filePath)
 		assert.NoError(t, err)
 
-		filename := filepath.Base(filePath)
+		defer os.Remove(file.Name())
 
-		err = graph.ParseMakeFile(filename)
+		_, err = file.WriteString(validMakefile)
+		assert.NoError(t, err)
+
+		err = graph.ParseMakeFile(file.Name())
 		assert.NoError(t, err)
 
 		err = graph.CheckCyclicDependency()
 		assert.NoError(t, err)
+
 	})
 
 	t.Run("cyclic dependency exists", func(t *testing.T) {
 
-		dir := t.TempDir()
+		invalidMakefile := `build:
+		@echo 'executing build'
+		echo 'cmd2'
+	
+		test: build publish
+		@echo 'executing test'
+	
+		publish: test 
+		@echo 'executing publish'`
 
-		filePath := filepath.Join(dir, "Makefile4")
+		dir := os.TempDir()
+		filePath := filepath.Join(dir, "Makefile")
 
-		err := os.WriteFile(filePath, make([]byte, 0), 0644)
+		file, err := os.Create(filePath)
 		assert.NoError(t, err)
 
-		filename := filepath.Base(filePath)
+		defer os.Remove(file.Name())
 
-		err = graph.ParseMakeFile(filename)
+		_, err = file.WriteString(invalidMakefile)
+		assert.NoError(t, err)
+
+		err = graph.ParseMakeFile(file.Name())
 		assert.NoError(t, err)
 
 		err = graph.CheckCyclicDependency()
 		assert.Equal(t, ErrCyclicDependency, err, "want error %q but got %q", ErrCyclicDependency, err)
+
 	})
 
 }
@@ -163,16 +217,18 @@ func TestOrderOfExecution(t *testing.T) {
 	graph := NewGraph()
 	t.Parallel()
 
-	dir := t.TempDir()
-
+	dir := os.TempDir()
 	filePath := filepath.Join(dir, "Makefile")
 
-	err := os.WriteFile(filePath, make([]byte, 0), 0644)
+	file, err := os.Create(filePath)
 	assert.NoError(t, err)
 
-	filename := filepath.Base(filePath)
+	defer os.Remove(file.Name())
 
-	err = graph.ParseMakeFile(filename)
+	_, err = file.WriteString(validMakefile)
+	assert.NoError(t, err)
+
+	err = graph.ParseMakeFile(file.Name())
 	assert.NoError(t, err)
 
 	vertex := graph.vertices["build"]
