@@ -1,0 +1,9 @@
+build:
+	@echo 'executing build'
+	echo 'cmd2'
+
+test: build publish
+	@echo 'executing test'
+
+publish: test 
+	@echo 'executing publish'
