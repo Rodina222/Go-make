@@ -17,32 +17,32 @@ This is a useful app for parsing makefiles and running target commands while tak
 ## __Manual:__
 
 1. Clone the repository:
-```ini
+```sh
 $ git clone https://github.com/codescalersinternships/gomake-Rodina.git
 ```
 2. Go to the repository directory:
- ```ini
+```sh
 $ cd gomake-Rodina
 ```
 3. Install dependencies:
-```ini
+```sh
 $ go get -d ./...
 ```
 4. Build the package:
-```ini
+```sh
 $ go build -o "bin/gomake" main.go
 ```
 5. Go to bin:
-```ini
+```sh
 $ cd bin
 ```
  ### __How to use?__
- ```ini
+```sh
 $ ./gomake -f Makefile -t target
 ```
 ### __Here is an example for a makefile:__
 
-```ini
+```sh
 build:
 	@echo 'executing build'
 	echo 'cmd2'
@@ -57,11 +57,11 @@ publish: test
 ### __How to test?:__
 
 Run all the tests as follows: 
-```ini
+```sh
 go test ./....
 ```
 If all tests pass on, the result should show that the tests were successful as follows:
-```ini
+```sh
 PASS
 ok      github.com/codescalersinternships/gomake-Rodina/internal        0.006s
 ```
