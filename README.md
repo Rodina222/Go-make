@@ -1,6 +1,6 @@
 # gomake-Rodina
 
-This is a useful app for parsing make files and running target commands while taking dependencies into account.
+This is a useful app for parsing makefiles and running target commands while taking dependencies into account.
 
 ## __Features:__
 - Parsing the command line.
