@@ -37,9 +37,12 @@ $ go build -o "bin/gomake" main.go
 $ cd bin
 ```
  ### __How to use?__
+
 ```sh
-$ ./gomake -f Makefile -t target
+$ gomake -f Makefile -t target
 ```
+Note: you need to move the binary to any `$PATH` directory first.
+
 ### __Here is an example for a makefile:__
 
 ```sh
