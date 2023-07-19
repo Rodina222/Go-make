@@ -17,13 +17,6 @@ func ExecCommand(command string) error {
 		command = strings.TrimPrefix(command, "@")
 	}
 
-	// print the command if not suppressed
-	if !suppressedCmd {
-		fmt.Println(command)
-	}
-
-	command = strings.ReplaceAll(command, "'", "")
-
 	// split the command into words
 	parts := strings.Fields(command)
 
@@ -34,7 +27,7 @@ func ExecCommand(command string) error {
 	cmdPath, err := exec.LookPath(cmdName)
 
 	if err != nil {
-		return err //fmt.Errorf("command not found: %s", cmdName)
+		return err
 	}
 
 	// create a new Command object with the command and its arguments
@@ -43,6 +36,11 @@ func ExecCommand(command string) error {
 	// set the output to print to the console
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	// print the command if not suppressed
+	if !suppressedCmd {
+		fmt.Println(command)
+	}
 
 	// execute the command
 	if err := cmd.Run(); err != nil {
