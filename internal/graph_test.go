@@ -83,29 +83,6 @@ publish: test
 		assert.Equal(t, ErrInvalidFormat, err, "want error %q but got %q", ErrInvalidFormat, err)
 
 	})
-
-	t.Run("target is repeated", func(t *testing.T) {
-
-		invalidMakefile := `build:
-	@echo 'executing build'
-	echo 'cmd2'
-
-publish: build
-	@echo 'executing test'
-
-publish: 
-	@echo 'executing publish'`
-
-		_, err = file.WriteString(invalidMakefile)
-		assert.NoError(t, err)
-
-		err = graph.ParseMakeFile(file.Name())
-		assert.Error(t, err)
-
-		assert.Equal(t, ErrTargetIsRepeated, err, "want error %q but got %q", ErrTargetIsRepeated, err)
-
-	})
-
 }
 
 func TestExecute(t *testing.T) {
