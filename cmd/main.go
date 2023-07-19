@@ -7,7 +7,7 @@ import (
 	"github.com/codescalersinternships/gomake-Rodina/internal"
 )
 
-const CommandFormat = "./gomake -f Makefile -t target"
+const CommandFormat = "gomake -f Makefile -t target"
 
 func main() {
 
