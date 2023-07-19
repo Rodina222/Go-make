@@ -20,6 +20,7 @@ func main() {
 
 	graph := internal.NewGraph()
 
+	
 	err = graph.Execute(filePath, target)
 	if err != nil {
 		fmt.Println(err)
