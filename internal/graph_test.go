@@ -86,6 +86,23 @@ publish: test
 
 }
 
+func TestExecute(t *testing.T) {
+
+	graph := NewGraph()
+
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "Makefile")
+
+	file, err := os.Create(filePath)
+	assert.NoError(t, err)
+
+	defer os.Remove(file.Name())
+
+	err = graph.Execute("build")
+	assert.NoError(t, err)
+
+}
+
 func TestCheckCmds(t *testing.T) {
 
 	graph := NewGraph()
