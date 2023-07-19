@@ -141,6 +141,7 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 	return nil
 }
 
+// Execute is a method that checks all the other methods on the graph and returns an error once one of them returns an error
 func (graph *Graph) Execute(target string) error {
 
 	// check cyclic dependency
