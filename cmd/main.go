@@ -13,7 +13,7 @@ func main() {
 
 	target, filePath, err := internal.ParseCommandLine()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to parse command line: %w\n", err)
+		fmt.Fprintf(os.Stderr, "failed to parse command line: %v\n", fmt.Errorf("%w", err))
 		fmt.Println(CommandFormat)
 		os.Exit(1)
 	}
