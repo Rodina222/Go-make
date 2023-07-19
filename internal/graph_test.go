@@ -16,7 +16,7 @@ const validMakefile = `build:
 test: build
 	@echo 'executing test'
 
-publish: 
+publish:
 	@echo 'executing publish'`
 
 func TestParseMakeFile(t *testing.T) {
