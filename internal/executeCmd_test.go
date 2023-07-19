@@ -21,5 +21,3 @@ func TestExecCommand(t *testing.T) {
 	})
 
 }
-
-
