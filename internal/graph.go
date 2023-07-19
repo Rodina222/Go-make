@@ -13,6 +13,9 @@ var (
 	// ErrTargetNotFound is returned when there is no input target or the input target doesn't exist
 	ErrTargetNotFound = errors.New("target is not found")
 
+	// ErrTargetIsRepeated is returned when a target is repeated in the makefile
+	ErrTargetIsRepeated = errors.New("target is repeated")
+
 	// ErrInvalidFormat is returned when the format of the input makefile is invalid
 	ErrInvalidFormat = errors.New("format is invalid")
 
@@ -123,6 +126,11 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 				return ErrInvalidFormat
 			}
 
+			_, ok := graph.vertices[target]
+			if ok {
+				return ErrTargetIsRepeated
+			}
+
 			// add the vertex to the graph
 			graph.vertices[target] = vertex
 
@@ -142,13 +150,24 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 }
 
 // Execute is a method that checks all the other methods on the graph and returns an error once one of them returns an error
-func (graph *Graph) Execute(target string) error {
+func (graph *Graph) Execute(filePath, target string) error {
 
-	// check cyclic dependency
-	err := graph.CheckCyclicDependency()
+	// parse the Makefile (create the graph)
+	err := graph.ParseMakeFile(filePath)
 
 	if err != nil {
-		fmt.Println(err)
+		return err
+	}
+
+	_, ok := graph.vertices[target]
+	if !ok {
+		return ErrTargetNotFound
+	}
+
+	// check cyclic dependency
+	err = graph.CheckCyclicDependency()
+
+	if err != nil {
 		return err
 	}
 
@@ -156,7 +175,6 @@ func (graph *Graph) Execute(target string) error {
 	err = graph.CheckCmds()
 
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -164,7 +182,6 @@ func (graph *Graph) Execute(target string) error {
 	err = graph.ExecuteInOrder(target)
 
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	return nil
@@ -232,7 +249,6 @@ func (graph *Graph) ExecuteInOrder(t string) error {
 	dependencies := target.dependencies
 
 	// Check if there are any dependencies
-
 	if len(dependencies) > 0 {
 		for _, dependency := range dependencies {
 
