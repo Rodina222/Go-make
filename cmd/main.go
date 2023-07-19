@@ -20,7 +20,7 @@ func main() {
 
 	graph := internal.NewGraph()
 
-	
+	// call method execute of the graph
 	err = graph.Execute(filePath, target)
 	if err != nil {
 		fmt.Println(err)
