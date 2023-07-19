@@ -11,13 +11,14 @@ const CommandFormat = "./gomake -f Makefile -t target"
 
 func main() {
 
-	graph := internal.NewGraph()
 	target, filePath, err := internal.ParseCommandLine()
+
+	graph := internal.NewGraph()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to parse command line: %v\n", err)
 		fmt.Println(CommandFormat)
-		return
+		os.Exit(1)
 	}
 
 	// parse the Makefile (create the graph)
@@ -25,7 +26,7 @@ func main() {
 
 	if err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
 	}
 
 	// check cyclic dependency
@@ -33,7 +34,7 @@ func main() {
 
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	//check all targets have commands
@@ -41,10 +42,15 @@ func main() {
 
 	if err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
 	}
 
 	// get the order of executing commands and execute them
-	graph.OrderOfExecution(target)
+	err = graph.ExecuteInOrder(target)
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 }
