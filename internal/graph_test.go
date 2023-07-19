@@ -98,6 +98,12 @@ func TestExecute(t *testing.T) {
 
 	defer os.Remove(file.Name())
 
+	_, err = file.WriteString(validMakefile)
+	assert.NoError(t, err)
+
+	err = graph.ParseMakeFile(file.Name())
+	assert.NoError(t, err)
+
 	err = graph.Execute("build")
 	assert.NoError(t, err)
 
