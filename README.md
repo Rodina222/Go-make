@@ -30,11 +30,7 @@ $ go get -d ./...
 ```
 4. Build the package:
 ```sh
-$ go build -o "bin/gomake" main.go
-```
-5. Go to bin:
-```sh
-$ cd bin
+$ go build -o "bin/gomake" cmd/main.go
 ```
  ### __How to use?__
 
@@ -53,7 +49,7 @@ build:
 test: build 
 	@echo 'executing test'
 
-publish: test 
+publish:  
 	@echo 'executing publish'
 
 ```
