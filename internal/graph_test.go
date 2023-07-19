@@ -16,7 +16,7 @@ const validMakefile = `build:
 test: build
 	@echo 'executing test'
 
-publish: test 
+publish:
 	@echo 'executing publish'`
 
 func TestParseMakeFile(t *testing.T) {
@@ -42,7 +42,7 @@ func TestParseMakeFile(t *testing.T) {
 				cmds:         []string{"@echo 'executing test'"},
 			},
 			"publish": {
-				dependencies: []string{"test"},
+				dependencies: []string{},
 				cmds:         []string{"@echo 'executing publish'"},
 			},
 		},
