@@ -141,6 +141,34 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 	return nil
 }
 
+func (graph *Graph) Execute(target string) error {
+
+	// check cyclic dependency
+	err := graph.CheckCyclicDependency()
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	//check all targets have commands
+	err = graph.CheckCmds()
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	// get the order of executing commands and execute them
+	err = graph.ExecuteInOrder(target)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
 // CheckCmds loops on all targets and checks that all of them have commands to be executed, otherwise it will return error
 func (graph *Graph) CheckCmds() error {
 
