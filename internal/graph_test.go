@@ -13,17 +13,23 @@ const validMakefile = `build:
 	@echo 'executing build'
 	echo 'cmd2'
 
-	test: build
+test: build
 	@echo 'executing test'
 
-	publish: test 
+publish: test 
 	@echo 'executing publish'`
 
 func TestParseMakeFile(t *testing.T) {
 
 	graph := NewGraph()
 
-	t.Parallel()
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "Makefile")
+
+	file, err := os.Create(filePath)
+	assert.NoError(t, err)
+
+	defer os.Remove(file.Name())
 
 	expectedGraph := Graph{
 		vertices: map[string]Vertex{
@@ -44,14 +50,6 @@ func TestParseMakeFile(t *testing.T) {
 
 	t.Run("valid makefile", func(t *testing.T) {
 
-		dir := os.TempDir()
-		filePath := filepath.Join(dir, "Makefile")
-
-		file, err := os.Create(filePath)
-		assert.NoError(t, err)
-
-		defer os.Remove(file.Name())
-
 		_, err = file.WriteString(validMakefile)
 		assert.NoError(t, err)
 
@@ -70,19 +68,11 @@ func TestParseMakeFile(t *testing.T) {
 	@echo 'executing build'
 	echo 'cmd2'
 
-	  : build
+: build
 	@echo 'executing test'
 
-	publish: test 
+publish: test 
 	@echo 'executing publish'`
-
-		dir := os.TempDir()
-		filePath := filepath.Join(dir, "Makefile")
-
-		file, err := os.Create(filePath)
-		assert.NoError(t, err)
-
-		defer os.Remove(file.Name())
 
 		_, err = file.WriteString(invalidMakefile)
 		assert.NoError(t, err)
@@ -99,17 +89,16 @@ func TestParseMakeFile(t *testing.T) {
 func TestCheckCmds(t *testing.T) {
 
 	graph := NewGraph()
-	t.Parallel()
+
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "Makefile")
+
+	file, err := os.Create(filePath)
+	assert.NoError(t, err)
+
+	defer os.Remove(file.Name())
 
 	t.Run("all targets have commands", func(t *testing.T) {
-
-		dir := os.TempDir()
-		filePath := filepath.Join(dir, "Makefile")
-
-		file, err := os.Create(filePath)
-		assert.NoError(t, err)
-
-		defer os.Remove(file.Name())
 
 		_, err = file.WriteString(validMakefile)
 		assert.NoError(t, err)
@@ -124,21 +113,11 @@ func TestCheckCmds(t *testing.T) {
 	t.Run("a target or more have no commands", func(t *testing.T) {
 
 		invalidMakefile := `build:
-		@echo 'executing build'
-		echo 'cmd2'
 	
-		test: build
+test: build
 	
-		publish: test 
+publish: test 
 		@echo 'executing publish'`
-
-		dir := os.TempDir()
-		filePath := filepath.Join(dir, "Makefile")
-
-		file, err := os.Create(filePath)
-		assert.NoError(t, err)
-
-		defer os.Remove(file.Name())
 
 		_, err = file.WriteString(invalidMakefile)
 		assert.NoError(t, err)
@@ -156,17 +135,16 @@ func TestCheckCmds(t *testing.T) {
 func TestCyclicDependency(t *testing.T) {
 
 	graph := NewGraph()
-	t.Parallel()
+
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "Makefile")
+
+	file, err := os.Create(filePath)
+	assert.NoError(t, err)
+
+	defer os.Remove(file.Name())
 
 	t.Run("no cyclic dependency exists", func(t *testing.T) {
-
-		dir := os.TempDir()
-		filePath := filepath.Join(dir, "Makefile")
-
-		file, err := os.Create(filePath)
-		assert.NoError(t, err)
-
-		defer os.Remove(file.Name())
 
 		_, err = file.WriteString(validMakefile)
 		assert.NoError(t, err)
@@ -183,21 +161,13 @@ func TestCyclicDependency(t *testing.T) {
 
 		invalidMakefile := `build:
 		@echo 'executing build'
-		echo 'cmd2'
+		@echo 'cmd2'
 	
-		test: build publish
+test: build publish
 		@echo 'executing test'
 	
-		publish: test 
+publish: test 
 		@echo 'executing publish'`
-
-		dir := os.TempDir()
-		filePath := filepath.Join(dir, "Makefile")
-
-		file, err := os.Create(filePath)
-		assert.NoError(t, err)
-
-		defer os.Remove(file.Name())
 
 		_, err = file.WriteString(invalidMakefile)
 		assert.NoError(t, err)
@@ -212,12 +182,11 @@ func TestCyclicDependency(t *testing.T) {
 
 }
 
-func TestOrderOfExecution(t *testing.T) {
+func TestExecuteInOrder(t *testing.T) {
 
 	graph := NewGraph()
-	t.Parallel()
 
-	dir := os.TempDir()
+	dir := t.TempDir()
 	filePath := filepath.Join(dir, "Makefile")
 
 	file, err := os.Create(filePath)
@@ -231,13 +200,7 @@ func TestOrderOfExecution(t *testing.T) {
 	err = graph.ParseMakeFile(file.Name())
 	assert.NoError(t, err)
 
-	vertex := graph.vertices["build"]
-	want := vertex.cmds
-
-	got := graph.OrderOfExecution("build")
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("order of cmds of got %s does not match want %v", got, want)
-	}
+	err = graph.ExecuteInOrder("build")
+	assert.NoError(t, err)
 
 }
