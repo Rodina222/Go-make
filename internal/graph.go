@@ -55,12 +55,6 @@ func NewGraph() Graph {
 
 }
 
-// AddCommand adds a command to a target in the graph
-func (vertex *Vertex) AddCommand(command string) {
-
-	vertex.cmds = append(vertex.cmds, command)
-}
-
 // AddDependencies adds the dependencies to a target in the graph
 func (vertex *Vertex) AddDependencies(line string) {
 
@@ -104,7 +98,17 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 			continue
 		}
 
-		if strings.Contains(line, ":") {
+		if strings.HasPrefix(line, "\t") && target != "" {
+
+			cmd := strings.TrimPrefix(line, "\t")
+			vertex.cmds = append(vertex.cmds, cmd)
+			graph.vertices[target] = vertex
+
+			continue
+
+		}
+
+		if strings.Count(line, ":") == 1 {
 
 			// create a new vertex in the graph
 			vertex = NewVertex()
@@ -132,21 +136,12 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 			continue
 
 		}
-
-		if strings.HasPrefix(line, "\t") && target != "" {
-
-			cmd := strings.TrimPrefix(line, "\t")
-			vertex.AddCommand(cmd)
-			graph.vertices[target] = vertex
-
-			continue
-
-		}
 		return ErrInvalidFormat
 	}
 	return nil
 }
 
+// CheckCmds loops on all targets and checks that all of them have commands to be executed, otherwise it will return error
 func (graph *Graph) CheckCmds() error {
 
 	for target, vertex := range graph.vertices {
@@ -164,56 +159,70 @@ func (graph *Graph) CheckCmds() error {
 // CheckCyclicDependency checks if a cyclic dependency exists or not and returns error once it is found
 func (graph *Graph) CheckCyclicDependency() error {
 
-	for target, vertex := range graph.vertices {
+	visited := make(map[string]bool)
+	onStack := make(map[string]bool)
 
-		dependencies := vertex.dependencies
+	for target := range graph.vertices {
+		if !visited[target] {
 
-		for _, dependency := range dependencies {
-
-			v := graph.vertices[dependency]
-
-			for _, dep := range v.dependencies {
-
-				if dep == target {
-
-					return ErrCyclicDependency
-				}
-
+			// perform DFS fo every unvisited target
+			if graph.hasCycle(target, visited, onStack) {
+				return ErrCyclicDependency
 			}
-
 		}
-
 	}
+
 	return nil
 }
 
-// OrderOfExecution ensures that the commands of the dependencies are executed first before the commands of the input target
-func (graph *Graph) OrderOfExecution(t string) []string {
+// hasCycle is a helper function for CheckCyclicDependency that performs DFS
+func (graph *Graph) hasCycle(v string, visited map[string]bool, onStack map[string]bool) bool {
+
+	visited[v] = true
+	onStack[v] = true
+
+	for _, dependency := range graph.vertices[v].dependencies {
+
+		if !visited[dependency] {
+			return graph.hasCycle(dependency, visited, onStack)
+		}
+
+		if onStack[dependency] {
+			return true
+		}
+	}
+
+	onStack[v] = false
+	return false
+}
+
+// ExecuteInOrder ensures that the commands of the dependencies are executed first before the commands of the input target
+func (graph *Graph) ExecuteInOrder(t string) error {
 
 	target := graph.vertices[t]
 	dependencies := target.dependencies
 
 	// Check if there are any dependencies
+
 	if len(dependencies) > 0 {
 		for _, dependency := range dependencies {
-			dep := graph.vertices[dependency]
 
-			// execute the commands of the dependencies first
-			for _, cmd := range dep.cmds {
-				ExecCommand(cmd)
+			// apply recursion to cover all layers of dependencies
+			err := graph.ExecuteInOrder(dependency)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
-	exexutionOrder := make([]string, 0, len(target.cmds))
 	// execute the commands of the target
 	for _, cmd := range target.cmds {
-
-		exexutionOrder = append(exexutionOrder, cmd)
-		ExecCommand(cmd)
-
+		err := ExecCommand(cmd)
+		if err != nil {
+			return err
+		}
 	}
 
-	return exexutionOrder
+	return nil
 
 }
