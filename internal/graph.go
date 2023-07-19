@@ -126,11 +126,6 @@ func (graph *Graph) ParseMakeFile(filepath string) error {
 				return ErrInvalidFormat
 			}
 
-			_, ok := graph.vertices[target]
-			if ok {
-				return ErrTargetIsRepeated
-			}
-
 			// add the vertex to the graph
 			graph.vertices[target] = vertex
 
