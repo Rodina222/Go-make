@@ -7,20 +7,18 @@ import (
 // ParseCommandLine parses the command line to extract the filename and target
 func ParseCommandLine() (string, string, error) {
 
-	filePath := flag.String("f", "", "file path to be opened")
-	target := flag.String("t", "", "target to be executed")
+	var filePath, target string
+
+	flag.StringVar(&filePath, "f", "Makefile", "file path to be opened")
+	flag.StringVar(&target, "t", "Makefile", "target to be executed")
+
 	flag.Parse()
 
 	// check that there is a target
-	if *target == "" {
+	if target == "" {
 		return "", "", ErrTargetNotFound
 	}
 
-	// specify the makefile if it is not given
-	if *filePath == "" {
-		*filePath = "Makefile"
-	}
-
-	return *target, *filePath, nil
+	return target, filePath, nil
 
 }
