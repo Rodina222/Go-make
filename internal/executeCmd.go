@@ -44,7 +44,7 @@ func ExecCommand(command string) error {
 
 	// execute the command
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("command failed: %v", err)
+		return fmt.Errorf("command failed: %w", err)
 	}
 
 	return nil
