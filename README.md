@@ -50,7 +50,7 @@ build:
 	@echo 'executing build'
 	echo 'cmd2'
 
-test: build publish
+test: build 
 	@echo 'executing test'
 
 publish: test 
